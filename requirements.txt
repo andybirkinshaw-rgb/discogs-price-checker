@@ -1,3 +1,4 @@
 streamlit
 requests
 currencyconverter
+beautifulsoup4
