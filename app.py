@@ -19,7 +19,7 @@ st.markdown("""
         background-color: #eefdf5; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #1e6e42; margin-bottom: 20px;
     }
     </style>
-""", unsafe_allowed_code_unsafe=True)
+""", unsafe_allowed_html=True)
 
 # Initialize Currency Converter safely
 @st.cache_resource
@@ -37,10 +37,8 @@ def to_gbp(amount, currency):
     if currency == "GBP" or currency == "£":
         return float(amount)
     try:
-        # Convert any incoming currency (USD, EUR, etc.) to GBP
         return float(cc.convert(amount, currency, 'GBP'))
     except Exception:
-        # Fallback approximation if currency library misses an obscure currency code
         if currency == "EUR": return float(amount) * 0.85
         if currency == "USD": return float(amount) * 0.79
         return float(amount)
@@ -52,7 +50,6 @@ st.caption("Server-side architecture with automatic currency translation to GBP"
 cat_input = st.text_input("Step 1: Enter Catalogue Number", placeholder="e.g. MCR1406CD or MCR1402")
 
 if cat_input:
-    # Use Session State to preserve selected items across button refreshes
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
         st.session_state.search_query = cat_input
         st.session_state.releases = []
@@ -87,22 +84,19 @@ if cat_input:
         if selected_display:
             st.session_state.selected_release = options[selected_display]
 
-    # Step 3: Detailed Valuation Component
+    # Step 3: Detailed Valuation
     if st.session_state.selected_release:
-        r = st.session_state.session_state.selected_release if 'selected_release' in st.session_state else st.session_state.selected_release
         r = st.session_state.selected_release
         rel_id = r['id']
         
         with st.spinner("Gathering precise live inventory and sales history..."):
-            # Concurrently fetch raw details directly from server safely
             rel_req = requests.get(f"https://api.discogs.com/releases/{rel_id}?token={TOKEN}", headers=HEADERS).json()
-            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/{rel_id}?token={TOKEN}", headers=HEADERS).json()
+            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/${rel_id}?token={TOKEN}", headers=HEADERS).json()
             list_req = requests.get(f"https://api.discogs.com/releases/{rel_id}/marketplace?token={TOKEN}", headers=HEADERS).json()
 
         st.markdown("---")
         st.subheader("Step 3: Valuation Breakdown")
 
-        # Header Display
         col1, col2 = st.columns([1, 4])
         with col1:
             st.image(r.get('thumb', ''), width=80)
@@ -110,7 +104,6 @@ if cat_input:
             st.markdown(f"### {r.get('title')}")
             st.markdown(f"**Format:** {', '.join(r.get('format', []))} | **Cat No:** {r.get('catno', 'N/A')}")
 
-        # Process Live Data Uncompromised
         live_listings = list_req.get('listings', [])
         total_for_sale = rel_req.get('num_for_sale', 0)
         
@@ -125,15 +118,14 @@ if cat_input:
                 if converted_p > 0:
                     prices_gbp.append(converted_p)
                 
-                cond = l.get('condition', '').toUpperCase() if isinstance(l.get('condition'), str) else str(l.get('condition', '')).upper()
+                cond = str(l.get('condition', '')).upper()
                 if "MINT" in cond and "NEAR" not in cond: m_count += 1
                 elif "NEAR MINT" in cond or "NM" in cond: nm_count += 1
                 else: vg_count += 1
         else:
-            # Server proxy fallback layout rules for restricted lists
             raw_floor = rel_req.get('lowest_price', 0)
             if raw_floor:
-                prices_gbp.append(to_gbp(raw_floor, "USD")) # Discogs default values route in USD
+                prices_gbp.append(to_gbp(raw_floor, "USD"))
             if total_for_sale == 1:
                 nm_count = 1
             elif total_for_sale > 1:
@@ -144,7 +136,6 @@ if cat_input:
         live_floor = prices_gbp[0] if prices_gbp else 0.0
         live_ceiling = prices_gbp[-1] if prices_gbp else 0.0
 
-        # Process Historical Sales Stats
         h_low, h_med, h_high = 0.0, 0.0, 0.0
         has_history = False
         
@@ -155,11 +146,9 @@ if cat_input:
             h_high = to_gbp(sug.get('near_mint', {}).get('value', 0), "USD")
             has_history = (h_low > 0 or h_med > 0 or h_high > 0)
 
-        # Condition weight control configuration UI Component
         st.markdown("#### Condition Adjuster")
         selected_cond = st.selectbox("What is the condition of YOUR copy?", ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"])
 
-        # Valuation Advice Logic Engine
         mult = 1.0
         if "Mint" in selected_cond: mult = 1.4
         elif "Near Mint" in selected_cond: mult = 1.15
@@ -174,7 +163,6 @@ if cat_input:
             rec_price = live_floor
             note_str = "No verified sales history logged. Matching live competitive floor pricing exactly."
 
-        # Pricing Box Output
         st.markdown(f"""
             <div class='val-box'>
                 <p style='margin:0; text-transform:uppercase; font-size:11px; color:#1e6e42; font-weight:bold;'>Your Recommended Sell Price</p>
@@ -183,7 +171,6 @@ if cat_input:
             </div>
         """, unsafe_allowed_html=True)
 
-        # UI Columns Split Display Matrix
         left_col, right_col = st.columns(2)
 
         with left_col:
