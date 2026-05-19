@@ -5,7 +5,6 @@ from currency_converter import CurrencyConverter
 # App Page Styling
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="centered")
 
-# FIXED: Removed 'unsafe_allowed_html' typo and converted to modern 'unsafe_allow_html' syntax
 st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allow_html=True)
 
 # Initialize Currency Converter safely
@@ -21,13 +20,15 @@ HEADERS = {"User-Agent": "RecordPriceCheckerPro/2.0 +https://streamlit.io"}
 def to_gbp(amount, currency):
     if not amount:
         return 0.0
-    if currency == "GBP" or currency == "£":
+    if currency in ["GBP", "£"]:
         return float(amount)
     try:
         return float(cc.convert(amount, currency, 'GBP'))
     except Exception:
         if currency == "EUR": return float(amount) * 0.85
         if currency == "USD": return float(amount) * 0.79
+        if currency == "CHF": return float(amount) * 0.88
+        if currency == "JPY": return float(amount) * 0.005
         return float(amount)
 
 st.title("🎵 Record Price Checker Pro")
@@ -77,9 +78,10 @@ if cat_input:
         rel_id = r['id']
         
         with st.spinner("Gathering precise live inventory and sales history..."):
-            rel_req = requests.get(f"https://api.discogs.com/releases/${rel_id}?token=${TOKEN}", headers=HEADERS).json()
-            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/${rel_id}?token=${TOKEN}", headers=HEADERS).json()
-            list_req = requests.get(f"https://api.discogs.com/releases/${rel_id}/marketplace?token=${TOKEN}", headers=HEADERS).json()
+            # FIXED: Removed the accidental JavaScript '$' symbol from the token parameter tracking string
+            rel_req = requests.get(f"https://api.discogs.com/releases/{rel_id}?token={TOKEN}", headers=HEADERS).json()
+            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/{rel_id}?token={TOKEN}", headers=HEADERS).json()
+            list_req = requests.get(f"https://api.discogs.com/releases/{rel_id}/marketplace?token={TOKEN}", headers=HEADERS).json()
 
         st.markdown("---")
         st.subheader("Step 3: Valuation Breakdown")
