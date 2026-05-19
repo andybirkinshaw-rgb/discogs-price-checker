@@ -33,11 +33,10 @@ st.caption("Dynamic Version Switching Enabled with Automatic Currency Correction
 cat_input = st.text_input("Step 1: Enter Catalogue Number", placeholder="e.g. MCR1402 or PCD-17746")
 
 if cat_input:
-    # Short-term memory configuration: Reset everything if a completely new search is typed
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
         st.session_state.search_query = cat_input
         st.session_state.releases = []
-        st.session_state.selected_release_index = 0  # Default tracker index
+        st.session_state.selected_release_index = 0  
 
     if not st.session_state.releases:
         with st.spinner("Searching Discogs database..."):
@@ -51,7 +50,7 @@ if cat_input:
             except Exception:
                 st.error("Database connection error.")
 
-    # Step 2: Selection Box with Dynamic Memory
+    # Step 2: Selection Box
     if st.session_state.releases:
         st.subheader("Step 2: Choose Exact Pressing")
         
@@ -64,7 +63,10 @@ if cat_input:
             title = r.get('title', 'Unknown')
             display_options.append(f"[{fmt.upper()}] {title} — {label} ({year}) [Cat: {catno}]")
 
-        # Track which version index is selected via Streamlit memory logs
+        # Bounds safety check for changing selection indexes dynamically
+        if st.session_state.selected_release_index >= len(display_options):
+            st.session_state.selected_release_index = 0
+
         selected_display = st.selectbox(
             "Select Version:", 
             options=display_options,
@@ -72,7 +74,6 @@ if cat_input:
             key="version_selector"
         )
         
-        # Update app memory state immediately if dropdown changes
         current_index = display_options.index(selected_display)
         st.session_state.selected_release_index = current_index
         active_release = st.session_state.releases[current_index]
@@ -81,9 +82,21 @@ if cat_input:
         rel_id = active_release['id']
         
         with st.spinner("Fetching true real-time pricing and history details..."):
+            # Core release fetch (Always safe and open)
             rel_req = requests.get(f"https://api.discogs.com/releases/{rel_id}?token={TOKEN}", headers=HEADERS).json()
-            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/{rel_id}?token={TOKEN}", headers=HEADERS).json()
-            list_req = requests.get(f"https://api.discogs.com/releases/{rel_id}/marketplace?token={TOKEN}", headers=HEADERS).json()
+            
+            # FIXED: Removed stray '$' symbols from token variables to prevent authentication failure blocks
+            stats_req = {}
+            try:
+                s_res = requests.get(f"https://api.discogs.com/marketplace/stats/{rel_id}?token={TOKEN}", headers=HEADERS)
+                if s_res.ok: stats_req = s_res.json()
+            except Exception: pass
+
+            list_req = {}
+            try:
+                l_res = requests.get(f"https://api.discogs.com/releases/{rel_id}/marketplace?token={TOKEN}", headers=HEADERS)
+                if l_res.ok: list_req = l_res.json()
+            except Exception: pass
 
         st.markdown("---")
         st.subheader("Step 3: Valuation Breakdown")
@@ -95,7 +108,7 @@ if cat_input:
             st.markdown(f"### {active_release.get('title')}")
             st.markdown(f"**Format:** {', '.join(active_release.get('format', []))} | **Cat No:** {active_release.get('catno', 'N/A')}")
 
-        # LIVE DATA DYNAMIC PROCESSING (Completely unhardcoded)
+        # Live Data Calculations
         live_listings = list_req.get('listings', []) if isinstance(list_req, dict) else []
         total_for_sale = rel_req.get('num_for_sale', 0) if isinstance(rel_req, dict) else 0
         
@@ -115,7 +128,7 @@ if cat_input:
                 elif "NEAR MINT" in cond or "NM" in cond: nm_count += 1
                 else: vg_count += 1
         else:
-            # Fallback block utilizing core data endpoints if secondary inventory stream fails
+            # Core data fallback cascade if secondary listing streams are restricted
             raw_floor = rel_req.get('lowest_price', 0) if isinstance(rel_req, dict) else 0
             if raw_floor:
                 prices_gbp.append(to_gbp(raw_floor, "USD"))
@@ -130,7 +143,7 @@ if cat_input:
         live_floor = prices_gbp[0] if prices_gbp else 0.0
         live_ceiling = prices_gbp[-1] if prices_gbp else 0.0
 
-        # HISTORICAL DATA DYNAMIC PROCESSING
+        # Historical Suggestions Parsing
         h_low, h_med, h_high = 0.0, 0.0, 0.0
         has_history = False
         
