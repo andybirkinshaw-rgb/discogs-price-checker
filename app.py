@@ -5,7 +5,8 @@ from currency_converter import CurrencyConverter
 # App Page Styling
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="centered")
 
-st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allowed_html=True)
+# FIXED: Removed 'unsafe_allowed_html' typo and converted to modern 'unsafe_allow_html' syntax
+st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allow_html=True)
 
 # Initialize Currency Converter safely
 @st.cache_resource
@@ -76,9 +77,9 @@ if cat_input:
         rel_id = r['id']
         
         with st.spinner("Gathering precise live inventory and sales history..."):
-            rel_req = requests.get(f"https://api.discogs.com/releases/{rel_id}?token={TOKEN}", headers=HEADERS).json()
-            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/${rel_id}?token={TOKEN}", headers=HEADERS).json()
-            list_req = requests.get(f"https://api.discogs.com/releases/{rel_id}/marketplace?token={TOKEN}", headers=HEADERS).json()
+            rel_req = requests.get(f"https://api.discogs.com/releases/${rel_id}?token=${TOKEN}", headers=HEADERS).json()
+            stats_req = requests.get(f"https://api.discogs.com/marketplace/stats/${rel_id}?token=${TOKEN}", headers=HEADERS).json()
+            list_req = requests.get(f"https://api.discogs.com/releases/${rel_id}/marketplace?token=${TOKEN}", headers=HEADERS).json()
 
         st.markdown("---")
         st.subheader("Step 3: Valuation Breakdown")
@@ -90,8 +91,8 @@ if cat_input:
             st.markdown(f"### {r.get('title')}")
             st.markdown(f"**Format:** {', '.join(r.get('format', []))} | **Cat No:** {r.get('catno', 'N/A')}")
 
-        live_listings = list_req.get('listings', [])
-        total_for_sale = rel_req.get('num_for_sale', 0)
+        live_listings = list_req.get('listings', []) if isinstance(list_req, dict) else []
+        total_for_sale = rel_req.get('num_for_sale', 0) if isinstance(rel_req, dict) else 0
         
         prices_gbp = []
         m_count, nm_count, vg_count = 0, 0, 0
@@ -109,7 +110,7 @@ if cat_input:
                 elif "NEAR MINT" in cond or "NM" in cond: nm_count += 1
                 else: vg_count += 1
         else:
-            raw_floor = rel_req.get('lowest_price', 0)
+            raw_floor = rel_req.get('lowest_price', 0) if isinstance(rel_req, dict) else 0
             if raw_floor:
                 prices_gbp.append(to_gbp(raw_floor, "USD"))
             if total_for_sale == 1:
@@ -119,13 +120,14 @@ if cat_input:
                 nm_count = int(total_for_sale * 0.4) or 1
                 vg_count = max(0, total_for_sale - m_count - nm_count)
 
+        prices_gbp.sort()
         live_floor = prices_gbp[0] if prices_gbp else 0.0
         live_ceiling = prices_gbp[-1] if prices_gbp else 0.0
 
         h_low, h_med, h_high = 0.0, 0.0, 0.0
         has_history = False
         
-        if "price_suggestions" in stats_req and stats_req["price_suggestions"]:
+        if isinstance(stats_req, dict) and "price_suggestions" in stats_req and stats_req["price_suggestions"]:
             sug = stats_req["price_suggestions"]
             h_low = to_gbp(sug.get('good_plus', {}).get('value', 0), "USD")
             h_med = to_gbp(sug.get('very_good_plus', {}).get('value', 0), "USD")
