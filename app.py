@@ -5,21 +5,7 @@ from currency_converter import CurrencyConverter
 # App Page Styling
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="centered")
 
-st.markdown("""
-    <style>
-    .reportview-container { background: #f5f1ea; }
-    .stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; }
-    div.stButton > button:first-child {
-        background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%;
-    }
-    .metric-box {
-        background-color: #ede8dd; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #d8d2c6;
-    }
-    .val-box {
-        background-color: #eefdf5; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #1e6e42; margin-bottom: 20px;
-    }
-    </style>
-""", unsafe_allowed_html=True)
+st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allowed_html=True)
 
 # Initialize Currency Converter safely
 @st.cache_resource
@@ -163,13 +149,8 @@ if cat_input:
             rec_price = live_floor
             note_str = "No verified sales history logged. Matching live competitive floor pricing exactly."
 
-        st.markdown(f"""
-            <div class='val-box'>
-                <p style='margin:0; text-transform:uppercase; font-size:11px; color:#1e6e42; font-weight:bold;'>Your Recommended Sell Price</p>
-                <h2 style='margin:5px 0; font-size:36px; font-family:monospace;'>£{rec_price:.2f}</h2>
-                <p style='margin:0; font-size:12px; color:#555;'>{note_str}</p>
-            </div>
-        """, unsafe_allowed_html=True)
+        st.success(f"**Your Recommended Sell Price:** £{rec_price:.2f}")
+        st.caption(note_str)
 
         left_col, right_col = st.columns(2)
 
