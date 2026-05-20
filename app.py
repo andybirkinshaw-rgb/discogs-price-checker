@@ -29,7 +29,6 @@ def to_gbp(amount, currency):
         return float(amount)
 
 # --- DYNAMIC KEY ITERATOR ENGINE ---
-# We use a counter in memory to change the widget name on reset, forcing the browser to clear it
 if 'reset_counter' not in st.session_state:
     st.session_state.reset_counter = 0
 
@@ -42,7 +41,6 @@ left_panel, right_panel = st.columns([1, 1], gap="large")
 with left_panel:
     st.subheader("📋 Control Panel")
     
-    # The key name changes dynamically every time the reset counter goes up
     current_widget_key = f"barcode_input_run_{st.session_state.reset_counter}"
     
     cat_input = st.text_input(
@@ -82,7 +80,12 @@ if cat_input:
                 year = r.get('year', 'N/A')
                 catno = r.get('catno', 'N/A')
                 title = r.get('title', 'Unknown')
-                display_options.append(f"[{fmt.upper()}] {title} — {label} ({year}) [Cat: {catno}]")
+                
+                # NATIVE ADDITION: Safely pull the country string, default to 'Unknown' if missing
+                country = r.get('country', 'Unknown')
+                
+                # Appending the [Country] tag cleanly into your display layout
+                display_options.append(f"[{fmt.upper()}] {title} — {label} ({year}) [{country}] [Cat: {catno}]")
 
             if st.session_state.selected_release_index >= len(display_options):
                 st.session_state.selected_release_index = 0
@@ -107,16 +110,11 @@ if cat_input:
             )
             
             st.markdown("---")
-            # --- TRUE HARD RELOAD WITH KEY SWAP ---
             if st.button("🔄 New Scan / Reset App"):
-                # Increment the counter so the next input box gets a completely fresh identity
                 st.session_state.reset_counter += 1
-                
-                # Clear out the tracking data states completely
                 for key in list(st.session_state.keys()):
-                    if key != 'reset_counter': # Keep only our key counter alive
+                    if key != 'reset_counter':
                         del st.session_state[key]
-                        
                 st.rerun()
 
         # Step 3: Analytics Execution
@@ -170,7 +168,10 @@ if cat_input:
                 st.image(active_release.get('thumb', ''), width=90)
             with item_col2:
                 st.markdown(f"### {active_release.get('title')}")
-                st.markdown(f"**Format:** {', '.join(active_release.get('format', []))} | **Cat No:** {active_release.get('catno', 'N/A')}")
+                
+                # NATIVE ADDITION: Also display the country clearly in the final dashboard summary text
+                active_country = active_release.get('country', 'Unknown')
+                st.markdown(f"**Format:** {', '.join(active_release.get('format', []))} | **Country:** {active_country} | **Cat No:** {active_release.get('catno', 'N/A')}")
 
             st.success(f"**Your Recommended Sell Price:** £{rec_price:.2f}")
             st.caption(note_str)
