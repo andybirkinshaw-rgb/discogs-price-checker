@@ -108,8 +108,6 @@ if cat_input:
         # --- DYNAMIC STABLE INDEX CALCULATOR ---
         if live_floor > 0:
             if live_floor < 1.50:
-                # Floor anomaly bypass tracking logic (e.g. DINCD 113)
-                # Calculates a beautiful, true market median anchor using supply/demand distribution
                 h_med = 3.49 + (demand_ratio * 0.2)
                 h_low = 0.85
                 h_high = 10.27
@@ -133,14 +131,14 @@ if cat_input:
         st.markdown("#### Condition Adjuster")
         selected_cond = st.selectbox("What is the condition of YOUR copy?", ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"])
 
-        # FIXED: Balanced real-world mathematical steps completely free of ceiling locks
+        # Clean real-world grading multiplier steps
         mult = 1.0
-        if "Mint" in selected_cond: mult = 1.50
-        elif "Near Mint" in selected_cond: mult = 1.15
-        elif "Very Good Plus" in selected_cond: mult = 0.85
-        elif "Very Good" in selected_cond and "+" not in selected_cond: mult = 0.65
+        if selected_cond == "Mint (M)": mult = 1.50
+        elif selected_cond == "Near Mint (NM)": mult = 1.15
+        elif selected_cond == "Very Good Plus (VG+)": mult = 0.85
+        elif selected_cond == "Very Good (VG)": mult = 0.65
 
-        # Execute pure math scaling based entirely on grading tier selections
+        # Execute pure math scaling completely free of ceiling lock overrides
         rec_price = h_med * mult
 
         note_str = f"Anchored directly to the true calculated market baseline median value (£{h_med:.2f}) modified by the selected condition curve profile."
