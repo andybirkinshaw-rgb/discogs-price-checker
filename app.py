@@ -36,7 +36,8 @@ left_panel, right_panel = st.columns([1, 1], gap="large")
 
 with left_panel:
     st.subheader("📋 Control Panel")
-    cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode")
+    # We assign a key to the input box so we can clear it from memory natively
+    cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode", key="barcode_key")
 
 if cat_input:
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
@@ -94,11 +95,13 @@ if cat_input:
             )
             
             st.markdown("---")
-            # --- FIXED NATIVE F5 RELOAD EMULATION ---
-            # Clicking this destroys the active cache state and triggers a full runtime refresh
+            # --- TRUE HARD RELOAD BUTTON ---
             if st.button("🔄 New Scan / Reset App"):
-                st.clear_cache() # Clears system state locks entirely
-                st.rerun()       # Forces an instant, native full page rebuild
+                # Cleanly wipe out every active memory state track, including the text field text
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                # Force an immediate app-wide restart from scratch
+                st.rerun()
 
         # Step 3: Analytics Execution
         rel_id = active_release['id']
