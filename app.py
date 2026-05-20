@@ -165,15 +165,28 @@ if cat_input:
             st.text(f"• Users Owning This: {have_count}")
             st.markdown(f"**Total Listings Active:** `{total_for_sale}`")
 
-        # --- NATIVE SCROLL ANCHOR TRIGGERS ---
-        # Places a native div at the absolute bottom and forces focus onto it
+        # --- NATIVE SCROLL ANCHOR WITH FOCUS BLUR ---
         st.markdown(
             """
             <div id="scroll-anchor"></div>
             <script>
-                var anchor = window.parent.document.getElementById('scroll-anchor') || document.getElementById('scroll-anchor');
+                // Find all text inputs inside Streamlit's main layout view
+                var mainDoc = window.parent.document;
+                var inputs = mainDoc.querySelectorAll('input[type="text"]');
+                
+                // Force active elements to blur (lose cursor focus) so scroll isn't blocked
+                inputs.forEach(function(input) {
+                    if (mainDoc.activeElement === input || document.activeElement === input) {
+                        input.blur();
+                    }
+                });
+
+                // Execute the smooth scroll to the bottom anchor element
+                var anchor = mainDoc.getElementById('scroll-anchor') || document.getElementById('scroll-anchor');
                 if (anchor) {
-                    anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    setTimeout(function() {
+                        anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 100); // Tiny delay to ensure browser register catches up
                 }
             </script>
             """, 
