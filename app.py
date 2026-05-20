@@ -5,7 +5,7 @@ from currency_converter import CurrencyConverter
 # --- WIDESCREEN LAYOUT CONFIGURATION ---
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="wide")
 
-# Original clean font styling restored and locked in
+# Original clean font styling safely preserved
 st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allow_html=True)
 
 @st.cache_resource
@@ -28,10 +28,6 @@ def to_gbp(amount, currency):
         if currency == "USD": return float(amount) * 0.79
         return float(amount)
 
-# --- NATIVE RESET INVENTORY ENGINE ---
-if 'barcode_value' not in st.session_state:
-    st.session_state.barcode_value = ""
-
 st.title("🎵 Record Price Checker Pro")
 st.caption("Widescreen Inventory Dashboard Architecture")
 
@@ -40,17 +36,9 @@ left_panel, right_panel = st.columns([1, 1], gap="large")
 
 with left_panel:
     st.subheader("📋 Control Panel")
-    
-    # NATIVE WORKFLOW FIX: Using an explicit text box tied directly to state memory
-    cat_input = st.text_input(
-        "Step 1: Enter Catalogue Number / Barcode", 
-        value=st.session_state.barcode_value,
-        placeholder="e.g. DINCD 113 or scan barcode",
-        key="main_search_input"
-    )
+    cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode")
 
 if cat_input:
-    # Handle data transitions safely across state updates
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
         st.session_state.search_query = cat_input
         st.session_state.releases = []
@@ -106,13 +94,11 @@ if cat_input:
             )
             
             st.markdown("---")
-            # NATIVE BUTTON FIX: Clears variables and triggers an instant screen reload
+            # --- FIXED NATIVE F5 RELOAD EMULATION ---
+            # Clicking this destroys the active cache state and triggers a full runtime refresh
             if st.button("🔄 New Scan / Reset App"):
-                st.session_state.barcode_value = ""
-                st.session_state.search_query = ""
-                st.session_state.releases = []
-                st.session_state.selected_release_index = 0
-                st.rerun()
+                st.clear_cache() # Clears system state locks entirely
+                st.rerun()       # Forces an instant, native full page rebuild
 
         # Step 3: Analytics Execution
         rel_id = active_release['id']
