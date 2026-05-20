@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from currency_converter import CurrencyConverter
+import streamlit.components.v1 as components
 
 # App Page Styling
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="centered")
@@ -30,7 +31,7 @@ st.title("🎵 Record Price Checker Pro")
 st.caption("Dynamic Value Calibration Engine with True Condition Separations")
 
 # Step 1: Input Search
-cat_input = st.text_input("Step 1: Enter Catalogue Number", placeholder="e.g. DINCD 113 or MCR1402")
+cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode")
 
 if cat_input:
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
@@ -129,9 +130,15 @@ if cat_input:
 
         # --- Step 4: Condition Custom Gradings ---
         st.markdown("#### Condition Adjuster")
-        selected_cond = st.selectbox("What is the condition of YOUR copy?", ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"])
+        
+        # FIXED: Index set to 1 so 'Near Mint (NM)' is the automatic default option
+        selected_cond = st.selectbox(
+            "What is the condition of YOUR copy?", 
+            ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"],
+            index=1
+        )
 
-        # Clean real-world grading multiplier steps
+        # Balanced real-world grading multiplier steps
         mult = 1.0
         if selected_cond == "Mint (M)": mult = 1.50
         elif selected_cond == "Near Mint (NM)": mult = 1.15
@@ -161,3 +168,17 @@ if cat_input:
             st.text(f"• Users Wanting This: {want_count}")
             st.text(f"• Users Owning This: {have_count}")
             st.markdown(f"**Total Listings Active:** `{total_for_sale}`")
+
+        # --- FIXED: AUTOMATIC WORKFLOW SCROLL-TO-BOTTOM MECHANIC ---
+        # Embeds an invisible JavaScript trigger that forces the browser window to snap straight down 
+        components.html(
+            """
+            <script>
+                window.parent.document.querySelector('section.main').scrollTo({
+                    top: window.parent.document.querySelector('section.main').scrollHeight,
+                    behavior: 'smooth'
+                });
+            </script>
+            """,
+            height=0
+        )
