@@ -28,6 +28,11 @@ def to_gbp(amount, currency):
         if currency == "USD": return float(amount) * 0.79
         return float(amount)
 
+# --- DYNAMIC KEY ITERATOR ENGINE ---
+# We use a counter in memory to change the widget name on reset, forcing the browser to clear it
+if 'reset_counter' not in st.session_state:
+    st.session_state.reset_counter = 0
+
 st.title("🎵 Record Price Checker Pro")
 st.caption("Widescreen Inventory Dashboard Architecture")
 
@@ -36,8 +41,15 @@ left_panel, right_panel = st.columns([1, 1], gap="large")
 
 with left_panel:
     st.subheader("📋 Control Panel")
-    # We assign a key to the input box so we can clear it from memory natively
-    cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode", key="barcode_key")
+    
+    # The key name changes dynamically every time the reset counter goes up
+    current_widget_key = f"barcode_input_run_{st.session_state.reset_counter}"
+    
+    cat_input = st.text_input(
+        "Step 1: Enter Catalogue Number / Barcode", 
+        placeholder="e.g. DINCD 113 or scan barcode", 
+        key=current_widget_key
+    )
 
 if cat_input:
     if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
@@ -95,12 +107,16 @@ if cat_input:
             )
             
             st.markdown("---")
-            # --- TRUE HARD RELOAD BUTTON ---
+            # --- TRUE HARD RELOAD WITH KEY SWAP ---
             if st.button("🔄 New Scan / Reset App"):
-                # Cleanly wipe out every active memory state track, including the text field text
+                # Increment the counter so the next input box gets a completely fresh identity
+                st.session_state.reset_counter += 1
+                
+                # Clear out the tracking data states completely
                 for key in list(st.session_state.keys()):
-                    del st.session_state[key]
-                # Force an immediate app-wide restart from scratch
+                    if key != 'reset_counter': # Keep only our key counter alive
+                        del st.session_state[key]
+                        
                 st.rerun()
 
         # Step 3: Analytics Execution
