@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 from currency_converter import CurrencyConverter
-import streamlit.components.v1 as components
 
 # App Page Styling
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="centered")
@@ -131,21 +130,18 @@ if cat_input:
         # --- Step 4: Condition Custom Gradings ---
         st.markdown("#### Condition Adjuster")
         
-        # FIXED: Index set to 1 so 'Near Mint (NM)' is the automatic default option
         selected_cond = st.selectbox(
             "What is the condition of YOUR copy?", 
             ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"],
             index=1
         )
 
-        # Balanced real-world grading multiplier steps
         mult = 1.0
         if selected_cond == "Mint (M)": mult = 1.50
         elif selected_cond == "Near Mint (NM)": mult = 1.15
         elif selected_cond == "Very Good Plus (VG+)": mult = 0.85
         elif selected_cond == "Very Good (VG)": mult = 0.65
 
-        # Execute pure math scaling completely free of ceiling lock overrides
         rec_price = h_med * mult
 
         note_str = f"Anchored directly to the true calculated market baseline median value (£{h_med:.2f}) modified by the selected condition curve profile."
@@ -169,16 +165,17 @@ if cat_input:
             st.text(f"• Users Owning This: {have_count}")
             st.markdown(f"**Total Listings Active:** `{total_for_sale}`")
 
-        # --- FIXED: AUTOMATIC WORKFLOW SCROLL-TO-BOTTOM MECHANIC ---
-        # Embeds an invisible JavaScript trigger that forces the browser window to snap straight down 
-        components.html(
+        # --- NATIVE SCROLL ANCHOR TRIGGERS ---
+        # Places a native div at the absolute bottom and forces focus onto it
+        st.markdown(
             """
+            <div id="scroll-anchor"></div>
             <script>
-                window.parent.document.querySelector('section.main').scrollTo({
-                    top: window.parent.document.querySelector('section.main').scrollHeight,
-                    behavior: 'smooth'
-                });
+                var anchor = window.parent.document.getElementById('scroll-anchor') || document.getElementById('scroll-anchor');
+                if (anchor) {
+                    anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
             </script>
-            """,
-            height=0
+            """, 
+            unsafe_allow_html=True
         )
