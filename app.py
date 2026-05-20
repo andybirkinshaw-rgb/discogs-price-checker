@@ -5,7 +5,7 @@ from currency_converter import CurrencyConverter
 # --- WIDESCREEN LAYOUT CONFIGURATION ---
 st.set_page_config(page_title="Record Price Checker Pro", page_icon="🎵", layout="wide")
 
-# Re-applying your original clean font styling without the squished compression hacks
+# Applying your original clean font styling and custom input tracking parameters
 st.markdown("<style>.stSelectbox, .stTextInput { font-family: 'DM Mono', monospace; } div.stButton > button:first-child { background-color: #0e0d0b; color: white; border-radius: 8px; font-weight: bold; width: 100%; }</style>", unsafe_allow_html=True)
 
 @st.cache_resource
@@ -28,6 +28,15 @@ def to_gbp(amount, currency):
         if currency == "USD": return float(amount) * 0.79
         return float(amount)
 
+# --- WORKFLOW RESET LOGIC ENGINE ---
+# This callback cleanly clears out the memory states when the New Scan button is tapped
+def reset_scan_workflow():
+    st.session_state.search_query = ""
+    st.session_state.releases = []
+    st.session_state.selected_release_index = 0
+    if "version_selector" in st.session_state:
+        del st.session_state["version_selector"]
+
 st.title("🎵 Record Price Checker Pro")
 st.caption("Widescreen Inventory Dashboard Architecture")
 
@@ -36,10 +45,22 @@ left_panel, right_panel = st.columns([1, 1], gap="large")
 
 with left_panel:
     st.subheader("📋 Control Panel")
-    cat_input = st.text_input("Step 1: Enter Catalogue Number / Barcode", placeholder="e.g. DINCD 113 or scan barcode")
+    
+    # Initialize session memory state for text tracking cleanly if empty
+    if 'search_query' not in st.session_state:
+        st.session_state.search_query = ""
+        
+    # The Text Field is initialized pulling its value directly from internal memory state tracking
+    cat_input = st.text_input(
+        "Step 1: Enter Catalogue Number / Barcode", 
+        value=st.session_state.search_query,
+        placeholder="e.g. DINCD 113 or scan barcode",
+        key="barcode_input_field"
+    )
 
 if cat_input:
-    if 'search_query' not in st.session_state or st.session_state.search_query != cat_input:
+    # Protect against looping triggers if a brand-new string value is encountered
+    if st.session_state.search_query != cat_input:
         st.session_state.search_query = cat_input
         st.session_state.releases = []
         st.session_state.selected_release_index = 0  
@@ -92,6 +113,10 @@ if cat_input:
                 ["Mint (M)", "Near Mint (NM)", "Very Good Plus (VG+)", "Very Good (VG)"],
                 index=1
             )
+            
+            st.markdown("---")
+            # --- THE NEW SCAN BUTTON ACTION HUB ---
+            st.button("🔄 New Scan / Reset App", on_click=reset_scan_workflow)
 
         # Step 3: Analytics Execution
         rel_id = active_release['id']
@@ -146,11 +171,9 @@ if cat_input:
                 st.markdown(f"### {active_release.get('title')}")
                 st.markdown(f"**Format:** {', '.join(active_release.get('format', []))} | **Cat No:** {active_release.get('catno', 'N/A')}")
 
-            # Big prominent display panel exactly how you liked it
             st.success(f"**Your Recommended Sell Price:** £{rec_price:.2f}")
             st.caption(note_str)
 
-            # Split metrics tracking boxes cleanly underneath the main result card
             metric_left, metric_right = st.columns(2)
             with metric_left:
                 st.markdown("##### Historical Profile")
@@ -165,3 +188,22 @@ if cat_input:
                 st.text(f"• Users Wanting This: {want_count}")
                 st.text(f"• Users Owning This: {have_count}")
                 st.markdown(f"**Total Listings Active:** `{total_for_sale}`")
+
+# --- NATIVE INJECTOR FOR AUTOMATIC INPUT CURSOR FOCUS ---
+# This locates the browser's active text field and forcefully pins the cursor focus inside it on load
+st.markdown(
+    """
+    <script>
+        var mainDoc = window.parent.document;
+        // Search for the explicit text input field element inside Streamlit's layout framework
+        var barcodeInput = mainDoc.querySelector('input[data-testid="stTextInputInput"]');
+        if (barcodeInput) {
+            // Tiny timeout cushion to ensure browser window assets finish rendering before calling focus
+            setTimeout(function() {
+                barcodeInput.focus();
+            }, 300);
+        }
+    </script>
+    """,
+    unsafe_allow_html=True
+)
